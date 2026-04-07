@@ -1,11 +1,13 @@
-use super::system::{resolve_command, shell_exec, validate_operation_command};
+use super::install::rewrite_launch_for_venv;
+use super::system::{shell_exec, validate_operation_command};
 use std::net::TcpStream;
 use std::time::Duration;
 
 #[tauri::command]
 pub async fn spawn_process(cmd: String) -> Result<u32, String> {
     validate_operation_command(&cmd)?;
-    let resolved = resolve_command(&cmd).unwrap_or_else(|_| cmd.clone());
+    // Try venv first (for pip-installed tools), then fall back to the raw command
+    let resolved = rewrite_launch_for_venv(&cmd);
     let child = shell_exec(&resolved).spawn().map_err(|e| {
         format!("Failed to start '{}': {}", resolved, e)
     })?;
@@ -87,7 +89,7 @@ pub async fn check_process_name(name: String) -> Result<bool, String> {
 #[tauri::command]
 pub async fn get_version(cmd: String) -> Result<Option<String>, String> {
     validate_operation_command(&cmd)?;
-    let resolved = resolve_command(&cmd).unwrap_or_else(|_| cmd.clone());
+    let resolved = rewrite_launch_for_venv(&cmd);
     let output = shell_exec(&resolved).output().map_err(|e| e.to_string())?;
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
