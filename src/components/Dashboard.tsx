@@ -21,7 +21,6 @@ export function Dashboard() {
   useHealthCheckPoller();
   useDockerPoller();
 
-  // Initialize tool statuses on manifest load
   useEffect(() => {
     for (const m of manifests) {
       if (m.supported_os && !m.supported_os.includes(platform)) {
@@ -51,6 +50,16 @@ export function Dashboard() {
     [manifests, activeStage, search]
   );
 
+  // Summary counts
+  const counts = useMemo(() => {
+    const vals = Object.values(statuses);
+    return {
+      running: vals.filter((s) => s === "running").length,
+      installed: vals.filter((s) => s === "installed").length,
+      installing: vals.filter((s) => s === "installing").length,
+    };
+  }, [statuses]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -62,9 +71,30 @@ export function Dashboard() {
   return (
     <div className="flex h-screen">
       <aside className="w-56 border-r border-surface-overlay flex flex-col p-4 gap-4">
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-white font-bold text-sm">R</div>
           <div className="text-xl font-bold tracking-tight">Robodeck</div>
         </div>
+
+        {/* Status summary */}
+        <div className="flex gap-2 text-[11px] mb-2">
+          {counts.running > 0 && (
+            <span className="text-status-green bg-status-green/10 px-2 py-0.5 rounded-full">
+              {counts.running} running
+            </span>
+          )}
+          {counts.installed > 0 && (
+            <span className="text-status-amber bg-status-amber/10 px-2 py-0.5 rounded-full">
+              {counts.installed} ready
+            </span>
+          )}
+          {counts.installing > 0 && (
+            <span className="text-status-blue bg-status-blue/10 px-2 py-0.5 rounded-full">
+              {counts.installing} installing
+            </span>
+          )}
+        </div>
+
         <StageFilter />
         <div className="mt-auto">
           <DockerStatus />
@@ -74,7 +104,7 @@ export function Dashboard() {
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="flex items-center gap-4 px-6 py-4 border-b border-surface-overlay">
           <SearchBar />
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 whitespace-nowrap">
             {filtered.length} tool{filtered.length !== 1 ? "s" : ""}
           </div>
         </header>

@@ -1,5 +1,6 @@
 import { useRobodeckStore } from "../store/toolStore";
 import { tauri } from "../lib/tauri";
+import { openUrl } from "../lib/shell";
 import type { ToolManifest, ToolStatus } from "../types/tool";
 import { StatusLed } from "./StatusLed";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -9,15 +10,26 @@ interface ToolTileProps {
   manifest: ToolManifest;
 }
 
-const STATUS_LABELS: Record<ToolStatus, string> = {
-  not_installed: "Not Installed",
-  installing: "Installing...",
-  installed: "Stopped",
-  starting: "Starting...",
-  running: "Running",
-  stopping: "Stopping...",
-  error: "Error",
-  unsupported: "Not Available",
+const BORDER_BY_STATUS: Record<ToolStatus, string> = {
+  not_installed: "border-surface-overlay",
+  installing: "border-status-blue/40",
+  installed: "border-status-amber/30",
+  starting: "border-status-amber/30",
+  running: "border-status-green/40",
+  stopping: "border-status-amber/30",
+  error: "border-status-red/40",
+  unsupported: "border-surface-overlay",
+};
+
+const BG_BY_STATUS: Record<ToolStatus, string> = {
+  not_installed: "bg-surface-raised",
+  installing: "bg-surface-raised",
+  installed: "bg-surface-raised",
+  starting: "bg-surface-raised",
+  running: "bg-[#0f1f15]",
+  stopping: "bg-surface-raised",
+  error: "bg-[#1f0f0f]",
+  unsupported: "bg-surface-raised opacity-50",
 };
 
 export function ToolTile({ manifest }: ToolTileProps) {
@@ -58,7 +70,7 @@ export function ToolTile({ manifest }: ToolTileProps) {
     setStatus(manifest.id, "starting");
     try {
       if (manifest.launch_type === "url" && manifest.open_url) {
-        window.open(manifest.open_url, "_blank");
+        openUrl(manifest.open_url);
         setStatus(manifest.id, "running");
       } else {
         const pid = await tauri.spawnProcess(getLaunchCmd());
@@ -83,66 +95,99 @@ export function ToolTile({ manifest }: ToolTileProps) {
   }
 
   function handleOpen() {
-    if (manifest.open_url) window.open(manifest.open_url, "_blank");
+    if (manifest.open_url) openUrl(manifest.open_url);
+  }
+
+  function handleDocs() {
+    openUrl(manifest.docs_url);
+  }
+
+  function handleGithub() {
+    if (manifest.github_url) openUrl(manifest.github_url);
   }
 
   return (
     <>
-      <div className="bg-surface-raised rounded-xl p-4 border border-surface-overlay hover:border-accent/30 transition-colors">
+      <div className={`rounded-xl p-4 border transition-colors ${BORDER_BY_STATUS[status]} ${BG_BY_STATUS[status]}`}>
+        {/* Header: icon + name + status badge */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-surface-overlay flex items-center justify-center text-lg font-bold text-accent">
               {manifest.name[0]}
             </div>
             <div>
-              <h3 className="font-semibold text-sm">{manifest.name}</h3>
-              <span className="text-xs text-gray-500">{manifest.version}</span>
+              <h3 className="font-semibold text-sm text-white">{manifest.name}</h3>
+              <span className="text-[11px] text-gray-500">v{manifest.version} · {manifest.install_type}</span>
             </div>
           </div>
           <StatusLed status={status} />
         </div>
 
-        <p className="text-xs text-gray-400 mb-3 line-clamp-2">{manifest.description}</p>
+        {/* Description */}
+        <p className="text-xs text-gray-400 mb-4 leading-relaxed line-clamp-2">
+          {manifest.description}
+        </p>
 
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500">{STATUS_LABELS[status]}</span>
-          <div className="flex gap-2">
-            {status === "not_installed" && (
-              <ActionButton label="Install" onClick={handleInstall} />
-            )}
-            {status === "installed" && (
-              <ActionButton label="Launch" onClick={handleLaunch} variant="primary" />
-            )}
-            {status === "running" && (
-              <>
-                {manifest.open_url && (
-                  <ActionButton label="Open UI" onClick={handleOpen} variant="primary" />
-                )}
-                <ActionButton label="Stop" onClick={handleStop} variant="danger" />
-              </>
-            )}
-            {status === "error" && (
-              <ActionButton label="Retry" onClick={handleInstall} />
-            )}
-            {(status === "installing" || status === "starting" || status === "stopping") && (
-              <ActionButton label={STATUS_LABELS[status]} onClick={() => {}} disabled />
-            )}
-            {status === "unsupported" && (
-              <span className="text-xs text-gray-600">Not available on {platform}</span>
-            )}
-          </div>
+        {/* Category tag */}
+        <div className="mb-3">
+          <span className="text-[10px] uppercase tracking-wider text-gray-500 bg-surface-overlay px-2 py-0.5 rounded">
+            {manifest.category}
+          </span>
         </div>
 
-        {manifest.docs_url && (
-          <a
-            href={manifest.docs_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-accent hover:underline mt-2 block"
-          >
+        {/* Action buttons */}
+        <div className="flex items-center gap-2 mb-3">
+          {status === "not_installed" && (
+            <ActionButton label="Install" onClick={handleInstall} variant="primary" />
+          )}
+          {status === "installed" && (
+            <ActionButton label="Launch" onClick={handleLaunch} variant="success" />
+          )}
+          {status === "running" && (
+            <>
+              {manifest.open_url && (
+                <ActionButton label="Open UI" onClick={handleOpen} variant="primary" />
+              )}
+              <ActionButton label="Stop" onClick={handleStop} variant="danger" />
+            </>
+          )}
+          {status === "error" && (
+            <>
+              <ActionButton label="Retry Install" onClick={handleInstall} variant="primary" />
+              <ActionButton
+                label="View Log"
+                onClick={() => setActiveInstall(manifest.id)}
+                variant="default"
+              />
+            </>
+          )}
+          {(status === "installing" || status === "starting" || status === "stopping") && (
+            <ActionButton label={status === "installing" ? "Installing..." : status === "starting" ? "Starting..." : "Stopping..."} onClick={() => {}} disabled />
+          )}
+          {status === "unsupported" && (
+            <span className="text-xs text-gray-600 italic">Not available on {platform}</span>
+          )}
+        </div>
+
+        {/* Links row */}
+        <div className="flex items-center gap-3 pt-2 border-t border-surface-overlay/50">
+          <button onClick={handleDocs} className="text-[11px] text-gray-500 hover:text-accent transition-colors">
             Docs
-          </a>
-        )}
+          </button>
+          {manifest.github_url && (
+            <button onClick={handleGithub} className="text-[11px] text-gray-500 hover:text-accent transition-colors">
+              GitHub
+            </button>
+          )}
+          {status !== "not_installed" && status !== "unsupported" && (
+            <button
+              onClick={() => setActiveInstall(manifest.id)}
+              className="text-[11px] text-gray-500 hover:text-accent transition-colors ml-auto"
+            >
+              Logs
+            </button>
+          )}
+        </div>
       </div>
 
       {confirmCmd && (
@@ -160,7 +205,7 @@ export function ToolTile({ manifest }: ToolTileProps) {
 interface ActionButtonProps {
   label: string;
   onClick: () => void;
-  variant?: "default" | "primary" | "danger";
+  variant?: "default" | "primary" | "success" | "danger";
   disabled?: boolean;
 }
 
@@ -168,13 +213,14 @@ function ActionButton({ label, onClick, variant = "default", disabled = false }:
   const styles = {
     default: "bg-surface-overlay hover:bg-surface-overlay/80 text-gray-300",
     primary: "bg-accent hover:bg-accent-hover text-white",
-    danger: "bg-status-red/20 hover:bg-status-red/30 text-status-red",
+    success: "bg-status-green/20 hover:bg-status-green/30 text-status-green border border-status-green/30",
+    danger: "bg-status-red/15 hover:bg-status-red/25 text-status-red border border-status-red/20",
   };
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${styles[variant]}`}
+      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${styles[variant]}`}
     >
       {label}
     </button>

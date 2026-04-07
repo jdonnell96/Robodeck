@@ -20,7 +20,10 @@
       "Bash(sips -z 128 128 icon.png --out icon.iconset/icon_128x128.png)",
       "Bash(git init:*)",
       "Bash(git add:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(git commit:*)",
+      "Bash(git remote:*)",
+      "Bash(git push:*)"
     ]
   }
 }
