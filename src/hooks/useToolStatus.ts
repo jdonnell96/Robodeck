@@ -41,6 +41,11 @@ export function useHealthCheckPoller() {
         ) {
           continue;
         }
+        // URL-based tools (open in browser) — don't health check,
+        // status is managed by the UI when user clicks Launch
+        if (manifest.launch_type === "url") {
+          continue;
+        }
         const healthy = await runHealthCheck(manifest);
         if (healthy && currentStatus !== "running") {
           setToolStatus(manifest.id, "running");
