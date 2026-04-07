@@ -338,7 +338,6 @@ pub async fn run_install(window: Window, cmd: String, tool_id: String) -> Result
             let msg = format!("[ERROR] {}", e);
             emit_done(&window, &tool_id, false, &msg);
             Err(msg)
-            }
         }
     }
 }
