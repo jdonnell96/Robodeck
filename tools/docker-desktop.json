@@ -7,7 +7,7 @@
   "icon": "docker.svg",
   "tags": ["container", "docker", "runtime", "infrastructure"],
   "install_type": "manual",
-  "install_cmd": "brew install --cask docker",
+  "install_cmd": "brew install --cask docker --force",
   "install_cmd_linux": "apt install -y docker.io",
   "install_cmd_win": "winget install -e --id Docker.DockerDesktop",
   "version_check_cmd": "docker --version",

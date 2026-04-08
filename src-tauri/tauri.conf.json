@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/nicbarker/Tauri/main/packages/tauri-cli/config.schema.json",
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/tauri-v2.0.0/crates/tauri-config-schema/schema.json",
   "productName": "RigStack",
   "version": "0.1.0",
   "identifier": "dev.rigstack.app",
@@ -26,8 +26,17 @@
       "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://raw.githubusercontent.com https://api.github.com https://registry.rigstack.dev; img-src 'self' data: https:"
     }
   },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVDNUJDNTBDN0Q0RjNFNTIKUldSU1BrOTlETVZiWExreG1jQmhVaDRtU2ludW5WdTRLZUxsQStQRnBNTjl1ZXEwSlRIeEVUTHAK",
+      "endpoints": [
+        "https://github.com/jdonnell96/RigStack/releases/latest/download/latest.json"
+      ]
+    }
+  },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "category": "DeveloperTool",
     "shortDescription": "Robotics ML tool manager",
