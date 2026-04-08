@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-REPO="jdonnell96/Robodeck"
+REPO="jdonnell96/RigStack"
 LATEST=$(curl -sL "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
 
 if [ -z "$LATEST" ]; then

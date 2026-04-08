@@ -19,7 +19,7 @@ RigStack is a desktop application that lets robotics and ML engineers install, l
 
 ## Quick Install
 
-Download the latest release for your platform from the [Releases page](https://github.com/jdonnell96/Robodeck/releases).
+Download the latest release for your platform from the [Releases page](https://github.com/jdonnell96/RigStack/releases).
 
 A CLI installer via [rigstack.dev](https://rigstack.dev) is coming soon.
 

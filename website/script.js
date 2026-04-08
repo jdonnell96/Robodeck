@@ -14,7 +14,7 @@
     os = 'windows';
   }
 
-  const raw = 'https://raw.githubusercontent.com/jdonnell96/Robodeck/main/website';
+  const raw = 'https://raw.githubusercontent.com/jdonnell96/RigStack/main/website';
   const commands = {
     mac: `curl -fsSL ${raw}/install.sh | sh`,
     linux: `curl -fsSL ${raw}/install.sh | sh`,

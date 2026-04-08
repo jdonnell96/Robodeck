@@ -1,9 +1,9 @@
 import type { ToolManifest } from "../types/tool";
 
 const MANIFEST_INDEX_URL =
-  "https://raw.githubusercontent.com/jdonnell96/Robodeck/main/tools/index.json";
+  "https://raw.githubusercontent.com/jdonnell96/RigStack/main/tools/index.json";
 const MANIFEST_BASE_URL =
-  "https://raw.githubusercontent.com/jdonnell96/Robodeck/main/tools/";
+  "https://raw.githubusercontent.com/jdonnell96/RigStack/main/tools/";
 const CACHE_KEY = "rigstack_manifests";
 const CACHE_TS_KEY = "rigstack_manifests_ts";
 const CACHE_TTL_MS = 1000 * 60 * 60; // 1 hour
