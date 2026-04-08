@@ -117,9 +117,14 @@ fn ensure_venv(window: &Window, tool_id: &str) -> Result<(), String> {
         return Err("Python is not installed. Install Python 3 from python.org".to_string());
     };
 
-    let output = std::process::Command::new(python)
-        .args(["-m", "venv", &venv.to_string_lossy()])
-        .output()
+    let mut venv_cmd = std::process::Command::new(python);
+    venv_cmd.args(["-m", "venv", &venv.to_string_lossy()]);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        venv_cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+    let output = venv_cmd.output()
         .map_err(|e| format!("Failed to create venv: {}", e))?;
 
     if !output.status.success() {
@@ -163,7 +168,11 @@ fn rewrite_npm_global(cmd: &str) -> String {
 fn which_exists(bin: &str) -> bool {
     #[cfg(target_os = "windows")]
     {
-        std::process::Command::new("where").arg(bin).output()
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        std::process::Command::new("where").arg(bin)
+            .creation_flags(CREATE_NO_WINDOW)
+            .output()
             .map(|o| o.status.success()).unwrap_or(false)
     }
     #[cfg(not(target_os = "windows"))]
@@ -242,9 +251,14 @@ pub fn is_pip_installed_in_venv(package: &str) -> bool {
     if !std::path::Path::new(&pip).exists() {
         return false;
     }
-    let output = std::process::Command::new(&pip)
-        .args(["show", package])
-        .output();
+    let mut pip_cmd = std::process::Command::new(&pip);
+    pip_cmd.args(["show", package]);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        pip_cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+    let output = pip_cmd.output();
     match output {
         Ok(o) => o.status.success(),
         Err(_) => false,

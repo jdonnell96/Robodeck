@@ -9,8 +9,11 @@ static RESOLVED_TOOLS: OnceLock<HashMap<String, String>> = OnceLock::new();
 fn which(bin: &str) -> bool {
     #[cfg(target_os = "windows")]
     {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
         Command::new("where")
             .arg(bin)
+            .creation_flags(CREATE_NO_WINDOW)
             .output()
             .map(|o| o.status.success())
             .unwrap_or(false)
@@ -277,8 +280,11 @@ pub fn validate_operation_command(cmd: &str) -> Result<(), String> {
 pub fn shell_exec(cmd: &str) -> Command {
     #[cfg(target_os = "windows")]
     {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
         let mut c = Command::new("cmd");
         c.args(["/C", cmd]);
+        c.creation_flags(CREATE_NO_WINDOW);
         c
     }
     #[cfg(not(target_os = "windows"))]
