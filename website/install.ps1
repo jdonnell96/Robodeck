@@ -1,0 +1,6 @@
+Write-Host ""
+Write-Host "  Robodeck installer coming soon."
+Write-Host ""
+Write-Host "  In the meantime, download the latest release from:"
+Write-Host "  https://github.com/jdonnell96/Robodeck/releases"
+Write-Host ""

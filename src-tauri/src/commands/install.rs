@@ -299,10 +299,6 @@ pub async fn run_install(window: Window, cmd: String, tool_id: String) -> Result
     }
 
     let trimmed = cmd.trim();
-    if let Err(e) = validate_install_command(&cmd) {
-        emit_done(&window, &tool_id, false, &format!("[ERROR] {}", e));
-        return Err(e);
-    }
 
     let is_pip = trimmed.starts_with("pip")
         || trimmed.starts_with("pip3")
@@ -374,6 +370,18 @@ fn derive_uninstall_cmd(install_cmd: &str) -> Option<String> {
     if trimmed.starts_with("docker pull") {
         let image = trimmed.strip_prefix("docker pull ")?.trim();
         return Some(format!("docker rmi {}", image));
+    }
+
+    // brew install [--cask] pkg -> brew uninstall pkg
+    if trimmed.starts_with("brew install") {
+        let package = trimmed.split_whitespace().last()?;
+        return Some(format!("brew uninstall {}", package));
+    }
+
+    // apt install [-y] pkg -> apt remove -y pkg
+    if trimmed.starts_with("apt install") || trimmed.starts_with("apt-get install") {
+        let package = trimmed.split_whitespace().last()?;
+        return Some(format!("apt remove -y {}", package));
     }
 
     None

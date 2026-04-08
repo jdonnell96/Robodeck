@@ -5,6 +5,7 @@ import { useDockerPoller } from "../hooks/useDockerStatus";
 import { StageFilter } from "./StageFilter";
 import { SearchBar } from "./SearchBar";
 import { DockerStatus } from "./DockerStatus";
+import { SidebarLinks } from "./SidebarLinks";
 import { ToolTile } from "./ToolTile";
 import { InstallDrawer } from "./InstallDrawer";
 import { EmptyState } from "./EmptyState";
@@ -96,7 +97,8 @@ export function Dashboard() {
         </div>
 
         <StageFilter />
-        <div className="mt-auto">
+        <div className="mt-auto flex flex-col gap-3">
+          <SidebarLinks />
           <DockerStatus />
         </div>
       </aside>

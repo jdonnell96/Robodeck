@@ -226,6 +226,7 @@ const OPERATION_PREFIXES: &[&str] = &[
     "rerun",
     "foxglove",
     "tensorboard",
+    "open -a",
 ];
 
 const BLOCKED_CHARS: &[&str] = &[";", "&&", "||", "|", "$(", "`", ">>", "<<", "\n", "\r"];
