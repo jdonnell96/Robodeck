@@ -6,6 +6,7 @@ import { StageFilter } from "./StageFilter";
 import { SearchBar } from "./SearchBar";
 import { DockerStatus } from "./DockerStatus";
 import { SidebarLinks } from "./SidebarLinks";
+import { UpdateBanner } from "./UpdateBanner";
 import { ToolTile } from "./ToolTile";
 import { InstallDrawer } from "./InstallDrawer";
 import { EmptyState } from "./EmptyState";
@@ -98,6 +99,7 @@ export function Dashboard() {
 
         <StageFilter />
         <div className="mt-auto flex flex-col gap-3">
+          <UpdateBanner />
           <SidebarLinks />
           <DockerStatus />
         </div>
