@@ -378,6 +378,26 @@ pub async fn run_install(window: Window, cmd: String, tool_id: String) -> Result
 
     let trimmed = cmd.trim();
 
+    // Check that required package managers exist before trying to use them
+    if trimmed.starts_with("brew ") && !which_exists("brew") {
+        let msg = "[ERROR] Homebrew is not installed. Install it from https://brew.sh then try again.\nRun: /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"";
+        emit_log(&window, &tool_id, msg);
+        emit_done(&window, &tool_id, false, msg);
+        return Err("Homebrew is not installed".to_string());
+    }
+    if trimmed.starts_with("apt ") && !which_exists("apt") {
+        let msg = "[ERROR] apt is not available on this system.";
+        emit_log(&window, &tool_id, msg);
+        emit_done(&window, &tool_id, false, msg);
+        return Err("apt is not available".to_string());
+    }
+    if trimmed.starts_with("winget ") && !which_exists("winget") {
+        let msg = "[ERROR] winget is not available. Install App Installer from the Microsoft Store.";
+        emit_log(&window, &tool_id, msg);
+        emit_done(&window, &tool_id, false, msg);
+        return Err("winget is not available".to_string());
+    }
+
     let is_pip = trimmed.starts_with("pip")
         || trimmed.starts_with("pip3")
         || (trimmed.starts_with("python") && trimmed.contains("-m pip"));
