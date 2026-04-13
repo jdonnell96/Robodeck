@@ -38,6 +38,8 @@ export function useHealthCheckPoller() {
           s !== "unsupported" &&
           s !== "installing" &&
           s !== "uninstalling" &&
+          s !== "starting" &&
+          s !== "stopping" &&
           m.launch_type !== "url"
         );
       });

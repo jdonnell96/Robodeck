@@ -67,6 +67,22 @@ const PREREQ_PATTERNS: Array<{ match: string; info: PrereqError }> = [
     },
   },
   {
+    match: "Cannot connect to the Docker daemon",
+    info: {
+      title: "Docker is not running",
+      fixLabel: "Open Docker Desktop",
+      fixUrl: "https://www.docker.com/products/docker-desktop/",
+    },
+  },
+  {
+    match: "Is the docker daemon running",
+    info: {
+      title: "Docker is not running",
+      fixLabel: "Open Docker Desktop",
+      fixUrl: "https://www.docker.com/products/docker-desktop/",
+    },
+  },
+  {
     match: "npm is not installed",
     info: { title: "Node.js / npm required", fixLabel: "Install Node.js", fixUrl: "https://nodejs.org" },
   },

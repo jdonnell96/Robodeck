@@ -34,7 +34,10 @@ export interface ToolManifest {
   update_cmd?: string;
   update_cmd_win?: string;
   update_cmd_linux?: string;
+  notes?: string;
   version_check_cmd: string;
+  version_check_cmd_win?: string;
+  version_check_cmd_linux?: string;
   launch_type: "docker" | "process" | "url";
   launch_cmd: string;
   launch_cmd_win?: string;

@@ -38,6 +38,9 @@ const BG_BY_STATUS: Record<ToolStatus, string> = {
 export function ToolTile({ manifest }: ToolTileProps) {
   const status = useRigstackStore((s) => s.statuses[manifest.id]) ?? "not_installed";
   const platform = useRigstackStore((s) => s.platform);
+  const anyInstalling = useRigstackStore((s) =>
+    Object.values(s.statuses).some((st) => st === "installing" || st === "uninstalling")
+  );
   const setStatus = useRigstackStore((s) => s.setToolStatus);
   const setPid = useRigstackStore((s) => s.setPid);
   const pids = useRigstackStore((s) => s.pids);
@@ -208,6 +211,13 @@ export function ToolTile({ manifest }: ToolTileProps) {
           {manifest.description}
         </p>
 
+        {/* Notes */}
+        {manifest.notes && (
+          <div className="mb-3 px-2 py-1.5 rounded bg-status-amber/10 border border-status-amber/20">
+            <p className="text-[11px] text-status-amber">{manifest.notes}</p>
+          </div>
+        )}
+
         {/* Category tag */}
         <div className="mb-3">
           <span className="text-[10px] uppercase tracking-wider text-gray-500 bg-surface-overlay px-2 py-0.5 rounded">
@@ -218,7 +228,13 @@ export function ToolTile({ manifest }: ToolTileProps) {
         {/* Action buttons */}
         <div className="flex items-center gap-2 mb-3">
           {status === "not_installed" && (
-            <ActionButton label="Install" onClick={handleInstall} variant="primary" />
+            <ActionButton
+              label="Install"
+              onClick={handleInstall}
+              variant="primary"
+              disabled={anyInstalling}
+              title={anyInstalling ? "Another install is in progress" : undefined}
+            />
           )}
           {status === "installed" && (
             <>
@@ -333,9 +349,10 @@ interface ActionButtonProps {
   onClick: () => void;
   variant?: "default" | "primary" | "success" | "danger";
   disabled?: boolean;
+  title?: string;
 }
 
-function ActionButton({ label, onClick, variant = "default", disabled = false }: ActionButtonProps) {
+function ActionButton({ label, onClick, variant = "default", disabled = false, title }: ActionButtonProps) {
   const styles = {
     default: "bg-surface-overlay hover:bg-surface-overlay/80 text-gray-300",
     primary: "bg-accent hover:bg-accent-hover text-white",
@@ -346,6 +363,7 @@ function ActionButton({ label, onClick, variant = "default", disabled = false }:
     <button
       onClick={onClick}
       disabled={disabled}
+      title={title}
       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${styles[variant]}`}
     >
       {label}

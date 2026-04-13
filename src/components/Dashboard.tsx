@@ -48,17 +48,20 @@ export function Dashboard() {
       const scannable = manifests.filter(
         (m) =>
           m.version_check_cmd &&
-          m.launch_type !== "url" &&
           !(m.supported_os && !m.supported_os.includes(platform))
       );
 
       await Promise.allSettled(
         scannable.map(async (m) => {
           try {
-            const version = await tauri.getVersion(m.version_check_cmd);
+            // Use platform-specific version check command if available
+            const cmd =
+              (platform === "windows" && m.version_check_cmd_win) ||
+              (platform === "linux" && m.version_check_cmd_linux) ||
+              m.version_check_cmd;
+            const version = await tauri.getVersion(cmd);
             const current = statuses[m.id];
             if (version !== null && version !== undefined) {
-              // Tool found on system
               if (current === "not_installed" || current === undefined) {
                 setToolStatus(m.id, "installed");
               }

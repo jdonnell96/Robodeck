@@ -13,7 +13,7 @@
   "launch_cmd": "python -m rerun",
   "stop_cmd": "pkill -f rerun",
   "stop_cmd_win": "taskkill /F /IM rerun.exe",
-  "health_check": { "type": "port", "target": "9876", "interval_ms": 5000 },
+  "health_check": { "type": "process", "target": "rerun", "interval_ms": 5000 },
   "open_url": "http://localhost:9090",
   "docs_url": "https://rerun.io/docs",
   "github_url": "https://github.com/rerun-io/rerun"

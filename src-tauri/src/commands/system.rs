@@ -185,9 +185,15 @@ pub fn check_installed(cmd: String) -> bool {
         "docker", "python", "python3", "pip", "pip3", "node", "npm", "git",
         "cargo", "ros2", "mlflow", "label-studio", "jupyter", "rerun",
         "foxglove-studio", "gz", "meshlab", "open3d", "yolo",
+        // brew list is read-only, used to detect cask installs (GUI apps)
+        "brew list",
+        // snap list is read-only, used to detect snap installs on Linux
+        "snap list",
     ];
-    let first_word = trimmed.split_whitespace().next().unwrap_or("");
-    if !allowed_prefixes.contains(&first_word) {
+    let allowed = allowed_prefixes
+        .iter()
+        .any(|p| trimmed == *p || trimmed.starts_with(&format!("{} ", p)));
+    if !allowed {
         return false;
     }
     shell_exec(trimmed)

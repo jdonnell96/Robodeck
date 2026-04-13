@@ -10,11 +10,11 @@
   "install_cmd": "pip install label-studio",
   "version_check_cmd": "pip show label-studio",
   "launch_type": "process",
-  "launch_cmd": "label-studio start",
+  "launch_cmd": "label-studio start --port 8081",
   "stop_cmd": "pkill -f label-studio",
   "stop_cmd_win": "taskkill /F /IM label-studio.exe",
-  "health_check": { "type": "http", "target": "http://localhost:8080", "interval_ms": 5000 },
-  "open_url": "http://localhost:8080",
+  "health_check": { "type": "http", "target": "http://localhost:8081", "interval_ms": 5000 },
+  "open_url": "http://localhost:8081",
   "docs_url": "https://labelstud.io/guide/",
   "github_url": "https://github.com/HumanSignal/label-studio"
 }

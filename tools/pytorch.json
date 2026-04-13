@@ -8,10 +8,11 @@
   "tags": ["deep-learning", "training", "gpu", "neural-network", "tensor"],
   "install_type": "pip",
   "install_cmd": "pip install torch torchvision torchaudio",
-  "version_check_cmd": "python3 -c \"import torch; print(torch.__version__)\"",
+  "notes": "For GPU support (CUDA), visit pytorch.org/get-started for the correct install command for your CUDA version.",
+  "version_check_cmd": "pip show torch",
   "launch_type": "url",
   "launch_cmd": "",
-  "health_check": { "type": "process", "target": "python", "interval_ms": 30000 },
+  "health_check": { "type": "process", "target": "torch", "interval_ms": 30000 },
   "docs_url": "https://pytorch.org/docs/stable/",
   "github_url": "https://github.com/pytorch/pytorch"
 }
