@@ -4,6 +4,7 @@ import { openUrl } from "../lib/shell";
 import type { ToolManifest, ToolStatus } from "../types/tool";
 import { StatusLed } from "./StatusLed";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { parsePrereqError } from "../lib/prereqs";
 import { useState } from "react";
 
 interface ToolTileProps {
@@ -13,6 +14,7 @@ interface ToolTileProps {
 const BORDER_BY_STATUS: Record<ToolStatus, string> = {
   not_installed: "border-surface-overlay",
   installing: "border-status-blue/40",
+  uninstalling: "border-status-red/30",
   installed: "border-status-amber/30",
   starting: "border-status-amber/30",
   running: "border-status-green/40",
@@ -24,6 +26,7 @@ const BORDER_BY_STATUS: Record<ToolStatus, string> = {
 const BG_BY_STATUS: Record<ToolStatus, string> = {
   not_installed: "bg-surface-raised",
   installing: "bg-surface-raised",
+  uninstalling: "bg-surface-raised",
   installed: "bg-surface-raised",
   starting: "bg-surface-raised",
   running: "bg-[#0f1f15]",
@@ -41,15 +44,37 @@ export function ToolTile({ manifest }: ToolTileProps) {
   const removePid = useRigstackStore((s) => s.removePid);
   const setActiveInstall = useRigstackStore((s) => s.setActiveInstall);
   const lastError = useRigstackStore((s) => s.errors[manifest.id]);
+  const installedVersion = useRigstackStore((s) => s.installedVersions[manifest.id]);
   const setError = useRigstackStore((s) => s.setError);
   const clearInstallLog = useRigstackStore((s) => s.clearInstallLog);
   const [confirmCmd, setConfirmCmd] = useState<string | null>(null);
+  const [confirmIsUpdate, setConfirmIsUpdate] = useState(false);
   const [confirmUninstall, setConfirmUninstall] = useState(false);
+
+  const isInstalled = status === "installed" || status === "running";
+  const hasUpdate =
+    isInstalled &&
+    installedVersion !== undefined &&
+    manifest.version !== undefined &&
+    installedVersion !== manifest.version;
 
   function getInstallCmd(): string {
     if (platform === "windows" && manifest.install_cmd_win) return manifest.install_cmd_win;
     if (platform === "linux" && manifest.install_cmd_linux) return manifest.install_cmd_linux;
     return manifest.install_cmd;
+  }
+
+  function getUpdateCmd(): string {
+    if (platform === "windows" && manifest.update_cmd_win) return manifest.update_cmd_win;
+    if (platform === "linux" && manifest.update_cmd_linux) return manifest.update_cmd_linux;
+    if (manifest.update_cmd) return manifest.update_cmd;
+    // Fall back to re-running install (most package managers handle upgrades)
+    return getInstallCmd();
+  }
+
+  function handleUpdate() {
+    setConfirmIsUpdate(true);
+    setConfirmCmd(getUpdateCmd());
   }
 
   function getLaunchCmd(): string {
@@ -58,6 +83,7 @@ export function ToolTile({ manifest }: ToolTileProps) {
   }
 
   function handleInstall() {
+    setConfirmIsUpdate(false);
     setConfirmCmd(getInstallCmd());
   }
 
@@ -127,7 +153,7 @@ export function ToolTile({ manifest }: ToolTileProps) {
   async function handleUninstall() {
     setConfirmUninstall(false);
     setError(manifest.id, null);
-    setStatus(manifest.id, "installing"); // reuse installing state for visual feedback
+    setStatus(manifest.id, "uninstalling");
     setActiveInstall(manifest.id);
     clearInstallLog(manifest.id);
     try {
@@ -161,8 +187,17 @@ export function ToolTile({ manifest }: ToolTileProps) {
               {manifest.name[0]}
             </div>
             <div>
-              <h3 className="font-semibold text-sm text-white">{manifest.name}</h3>
-              <span className="text-[11px] text-gray-500">v{manifest.version} · {manifest.install_type}</span>
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-sm text-white">{manifest.name}</h3>
+                {hasUpdate && (
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-status-amber bg-status-amber/15 px-1.5 py-0.5 rounded">
+                    Update
+                  </span>
+                )}
+              </div>
+              <span className="text-[11px] text-gray-500">
+                {installedVersion ? `v${installedVersion}` : `v${manifest.version}`} · {manifest.install_type}
+              </span>
             </div>
           </div>
           <StatusLed status={status} />
@@ -188,6 +223,9 @@ export function ToolTile({ manifest }: ToolTileProps) {
           {status === "installed" && (
             <>
               <ActionButton label="Launch" onClick={handleLaunch} variant="success" />
+              {hasUpdate && (
+                <ActionButton label="Update" onClick={handleUpdate} variant="primary" />
+              )}
               <ActionButton label="Uninstall" onClick={() => setConfirmUninstall(true)} variant="danger" />
             </>
           )}
@@ -195,6 +233,9 @@ export function ToolTile({ manifest }: ToolTileProps) {
             <>
               {manifest.open_url && (
                 <ActionButton label="Open UI" onClick={handleOpen} variant="primary" />
+              )}
+              {hasUpdate && (
+                <ActionButton label="Update" onClick={handleUpdate} variant="default" />
               )}
               <ActionButton label="Stop" onClick={handleStop} variant="danger" />
             </>
@@ -209,8 +250,16 @@ export function ToolTile({ manifest }: ToolTileProps) {
               />
             </>
           )}
-          {(status === "installing" || status === "starting" || status === "stopping") && (
-            <ActionButton label={status === "installing" ? "Installing..." : status === "starting" ? "Starting..." : "Stopping..."} onClick={() => {}} disabled />
+          {(status === "installing" || status === "uninstalling" || status === "starting" || status === "stopping") && (
+            <ActionButton
+              label={
+                status === "installing" ? "Installing..." :
+                status === "uninstalling" ? "Uninstalling..." :
+                status === "starting" ? "Starting..." : "Stopping..."
+              }
+              onClick={() => {}}
+              disabled
+            />
           )}
           {status === "unsupported" && (
             <span className="text-xs text-gray-600 italic">Not available on {platform}</span>
@@ -218,11 +267,24 @@ export function ToolTile({ manifest }: ToolTileProps) {
         </div>
 
         {/* Error message */}
-        {lastError && status === "error" && (
-          <div className="mb-3 px-2 py-1.5 rounded bg-status-red/10 border border-status-red/20">
-            <p className="text-[11px] text-status-red break-words">{lastError}</p>
-          </div>
-        )}
+        {lastError && status === "error" && (() => {
+          const prereq = parsePrereqError(lastError);
+          return prereq ? (
+            <div className="mb-3 px-3 py-2 rounded bg-status-red/10 border border-status-red/20">
+              <p className="text-[11px] font-medium text-status-red mb-1">{prereq.title}</p>
+              <button
+                onClick={() => openUrl(prereq.fixUrl)}
+                className="text-[11px] text-accent hover:underline"
+              >
+                {prereq.fixLabel} →
+              </button>
+            </div>
+          ) : (
+            <div className="mb-3 px-2 py-1.5 rounded bg-status-red/10 border border-status-red/20">
+              <p className="text-[11px] text-status-red break-words">{lastError}</p>
+            </div>
+          );
+        })()}
 
         {/* Links row */}
         <div className="flex items-center gap-3 pt-2 border-t border-surface-overlay/50">
@@ -247,7 +309,7 @@ export function ToolTile({ manifest }: ToolTileProps) {
 
       {confirmCmd && (
         <ConfirmDialog
-          title={`Install ${manifest.name}?`}
+          title={confirmIsUpdate ? `Update ${manifest.name}?` : `Install ${manifest.name}?`}
           command={confirmCmd}
           onConfirm={() => executeInstall(confirmCmd)}
           onCancel={() => setConfirmCmd(null)}

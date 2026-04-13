@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useRigstackStore } from "../store/toolStore";
 import { useHealthCheckPoller } from "../hooks/useToolStatus";
 import { useDockerPoller } from "../hooks/useDockerStatus";
@@ -10,6 +10,7 @@ import { UpdateBanner } from "./UpdateBanner";
 import { ToolTile } from "./ToolTile";
 import { InstallDrawer } from "./InstallDrawer";
 import { EmptyState } from "./EmptyState";
+import { tauri } from "../lib/tauri";
 
 export function Dashboard() {
   const manifests = useRigstackStore((s) => s.manifests);
@@ -19,10 +20,13 @@ export function Dashboard() {
   const loading = useRigstackStore((s) => s.loading);
   const statuses = useRigstackStore((s) => s.statuses);
   const setToolStatus = useRigstackStore((s) => s.setToolStatus);
+  const setInstalledVersion = useRigstackStore((s) => s.setInstalledVersion);
+  const scannedRef = useRef(false);
 
   useHealthCheckPoller();
   useDockerPoller();
 
+  // Mark unsupported tools and initialize status for new tools not in persisted state
   useEffect(() => {
     for (const m of manifests) {
       if (m.supported_os && !m.supported_os.includes(platform)) {
@@ -34,6 +38,43 @@ export function Dashboard() {
       }
     }
   }, [manifests, platform, statuses, setToolStatus]);
+
+  // Startup scan: detect tools installed outside RigStack (runs once per session)
+  useEffect(() => {
+    if (manifests.length === 0 || scannedRef.current) return;
+    scannedRef.current = true;
+
+    async function scanInstalled() {
+      const scannable = manifests.filter(
+        (m) =>
+          m.version_check_cmd &&
+          m.launch_type !== "url" &&
+          !(m.supported_os && !m.supported_os.includes(platform))
+      );
+
+      await Promise.allSettled(
+        scannable.map(async (m) => {
+          try {
+            const version = await tauri.getVersion(m.version_check_cmd);
+            const current = statuses[m.id];
+            if (version !== null && version !== undefined) {
+              // Tool found on system
+              if (current === "not_installed" || current === undefined) {
+                setToolStatus(m.id, "installed");
+              }
+              setInstalledVersion(m.id, version);
+            } else if (current === undefined) {
+              setToolStatus(m.id, "not_installed");
+            }
+          } catch {
+            // Tool not found — leave status as-is
+          }
+        })
+      );
+    }
+
+    scanInstalled();
+  }, [manifests, platform]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = useMemo(
     () =>
@@ -52,15 +93,19 @@ export function Dashboard() {
     [manifests, activeStage, search]
   );
 
+  const errors = useRigstackStore((s) => s.errors);
+
   // Summary counts
   const counts = useMemo(() => {
     const vals = Object.values(statuses);
+    const errCount = Object.values(errors).filter(Boolean).length;
     return {
       running: vals.filter((s) => s === "running").length,
       installed: vals.filter((s) => s === "installed").length,
       installing: vals.filter((s) => s === "installing").length,
+      errors: errCount,
     };
-  }, [statuses]);
+  }, [statuses, errors]);
 
   if (loading) {
     return (
@@ -79,7 +124,7 @@ export function Dashboard() {
         </div>
 
         {/* Status summary */}
-        <div className="flex gap-2 text-[11px] mb-2">
+        <div className="flex flex-wrap gap-1.5 text-[11px] mb-2">
           {counts.running > 0 && (
             <span className="text-status-green bg-status-green/10 px-2 py-0.5 rounded-full">
               {counts.running} running
@@ -93,6 +138,11 @@ export function Dashboard() {
           {counts.installing > 0 && (
             <span className="text-status-blue bg-status-blue/10 px-2 py-0.5 rounded-full">
               {counts.installing} installing
+            </span>
+          )}
+          {counts.errors > 0 && (
+            <span className="text-status-red bg-status-red/10 px-2 py-0.5 rounded-full">
+              {counts.errors} error{counts.errors !== 1 ? "s" : ""}
             </span>
           )}
         </div>

@@ -18,6 +18,7 @@ export const tauri = {
   runUninstall: (installCmd: string, toolId: string) =>
     invoke<void>("run_uninstall", { installCmd, toolId }),
   getSystemInfo: () => invoke<Record<string, boolean>>("get_system_info"),
+  checkInstalled: (cmd: string) => invoke<boolean>("check_installed", { cmd }),
   onInstallLog: (cb: (e: InstallLogEvent) => void): Promise<UnlistenFn> =>
     listen<InstallLogEvent>("install_log", (e) => cb(e.payload)),
 };

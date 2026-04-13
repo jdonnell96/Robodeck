@@ -11,6 +11,11 @@ const LED_STYLES: Record<ToolStatus, { dot: string; label: string; text: string 
     label: "Installing",
     text: "text-status-blue",
   },
+  uninstalling: {
+    dot: "bg-status-red animate-pulse",
+    label: "Uninstalling",
+    text: "text-status-red",
+  },
   installed: {
     dot: "bg-status-amber",
     label: "Installed",

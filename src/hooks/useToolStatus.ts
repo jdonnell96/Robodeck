@@ -31,28 +31,28 @@ export function useHealthCheckPoller() {
     if (manifests.length === 0) return;
 
     async function pollAll() {
-      for (const manifest of manifests) {
-        const currentStatus = statuses[manifest.id];
-        // Skip tools that don't need polling
-        if (
-          currentStatus === "not_installed" ||
-          currentStatus === "unsupported" ||
-          currentStatus === "installing"
-        ) {
-          continue;
-        }
-        // URL-based tools (open in browser) — don't health check,
-        // status is managed by the UI when user clicks Launch
-        if (manifest.launch_type === "url") {
-          continue;
-        }
-        const healthy = await runHealthCheck(manifest);
-        if (healthy && currentStatus !== "running") {
-          setToolStatus(manifest.id, "running");
-        } else if (!healthy && currentStatus === "running") {
-          setToolStatus(manifest.id, "installed");
-        }
-      }
+      const pollable = manifests.filter((m) => {
+        const s = statuses[m.id];
+        return (
+          s !== "not_installed" &&
+          s !== "unsupported" &&
+          s !== "installing" &&
+          s !== "uninstalling" &&
+          m.launch_type !== "url"
+        );
+      });
+
+      await Promise.allSettled(
+        pollable.map(async (manifest) => {
+          const currentStatus = statuses[manifest.id];
+          const healthy = await runHealthCheck(manifest);
+          if (healthy && currentStatus !== "running") {
+            setToolStatus(manifest.id, "running");
+          } else if (!healthy && currentStatus === "running") {
+            setToolStatus(manifest.id, "installed");
+          }
+        })
+      );
     }
 
     intervalRef.current = setInterval(pollAll, 5000);

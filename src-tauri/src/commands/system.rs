@@ -172,6 +172,32 @@ pub fn resolve_command(cmd: &str) -> Result<String, String> {
     Ok(trimmed.to_string())
 }
 
+/// Check if a tool is installed by running its version command and seeing if it exits 0.
+/// Used at startup to detect tools installed outside RigStack.
+#[tauri::command]
+pub fn check_installed(cmd: String) -> bool {
+    if cmd.is_empty() {
+        return false;
+    }
+    let trimmed = cmd.trim();
+    // Security: only allow safe version-check commands
+    let allowed_prefixes = [
+        "docker", "python", "python3", "pip", "pip3", "node", "npm", "git",
+        "cargo", "ros2", "mlflow", "label-studio", "jupyter", "rerun",
+        "foxglove-studio", "gz", "meshlab", "open3d", "yolo",
+    ];
+    let first_word = trimmed.split_whitespace().next().unwrap_or("");
+    if !allowed_prefixes.contains(&first_word) {
+        return false;
+    }
+    shell_exec(trimmed)
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
 /// Expose detected tools to the frontend so it can show missing prerequisites
 #[tauri::command]
 pub fn get_system_info() -> HashMap<String, bool> {
@@ -233,7 +259,7 @@ const OPERATION_PREFIXES: &[&str] = &[
     "open -a",
 ];
 
-const BLOCKED_CHARS: &[&str] = &[";", "&&", "||", "|", "$(", "`", ">>", "<<", "\n", "\r"];
+const BLOCKED_CHARS: &[&str] = &[";", "&&", "||", "|", "$(", "`", ">>", "<<", ">", "<", "\n", "\r"];
 
 fn check_blocked_chars(cmd: &str) -> Result<(), String> {
     for blocked in BLOCKED_CHARS {

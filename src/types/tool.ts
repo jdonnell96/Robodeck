@@ -3,6 +3,7 @@ export type Stage = "capture" | "annotate" | "train" | "simulate" | "infra";
 export type ToolStatus =
   | "not_installed"
   | "installing"
+  | "uninstalling"
   | "installed"
   | "starting"
   | "running"
@@ -30,6 +31,9 @@ export interface ToolManifest {
   install_cmd: string;
   install_cmd_win?: string;
   install_cmd_linux?: string;
+  update_cmd?: string;
+  update_cmd_win?: string;
+  update_cmd_linux?: string;
   version_check_cmd: string;
   launch_type: "docker" | "process" | "url";
   launch_cmd: string;
